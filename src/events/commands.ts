@@ -9,9 +9,9 @@ const initCommands = (app: App) => {
       await ack();
       const args = command.text.split('|').map((arg) => arg.trim());
       const [keyword, question] = args;
-      const foundFaq = faq.find((entry) => {
+      const foundFaq = faq.find((entry) => 
         entry.keyword.includes(keyword) || entry.question.includes(question)
-      })
+      )
       if (foundFaq) {
         say({ 
           blocks: [
