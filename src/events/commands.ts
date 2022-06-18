@@ -29,30 +29,28 @@ const initCommands = (app: App) => {
         if (expertNames.length !== 0) {
           const expertIds = await findUserIdsByNames(expertNames);
           const questionAuthorId = await findUserId();
-          const questionAuthor = await findUserNameById(questionAuthorId as string)
+          const questionAuthor = await findUserNameById(questionAuthorId as string);
 
           // store data into database and get questionId
           // insert: player (userId, userName)
           // data: question ( title, authorId, created_at, answerId, status)
 
-          const dbUser = await DB.findPlayerByUserId(questionAuthorId as string);
+          const dbUser: any = await DB.findPlayerByUserId(questionAuthorId as string);
+          
           let userId;
           if (!dbUser) {
-            const response = await DB.addPlayer(questionAuthorId as string, questionAuthor?.name as string);
-            userId = (response as any).id;
-            console.log("not user db");
+            const response: any = await DB.addPlayer(questionAuthorId as string, questionAuthor?.name as string);
+
+            userId = response.id;
+            console.log('not user db');
           } else {
-            userId = (dbUser as any).id;
-            console.log("db user");
+            userId = dbUser.id;
+            console.log('db user');
           }
           console.log('userid', userId);
 
-          // insert question
-
-          const questionId = 10;
-          DB.addQuestion(question, (paras: any) => {
-            console.log(paras);
-          });
+          const questionResponse: any = await DB.addQuestion(question, 'Open', userId, null);
+          const questionId = questionResponse.id;
 
           expertIds?.forEach((user) => {
             publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
@@ -179,18 +177,18 @@ const initCommands = (app: App) => {
         token: SLACK_BOT_OAUTH_TOKEN,
       });
 
-      let user: { id: string; name: string } ={id:"",name:""};
- 
+      let user: { id: string; name: string } = { id: '', name: '' };
+
       if (result !== undefined) {
         for (const member of (result as any).members) {
           if (member.id === id) {
             user.id = member.id;
-            user.name= member.real_name };
+            user.name = member.real_name;
           }
         }
-    
-      return user;
+      }
 
+      return user;
     } catch (error) {
       console.error(error);
     }

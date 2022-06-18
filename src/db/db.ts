@@ -48,10 +48,24 @@ export class DB {
     });
   }
 
-  static addQuestion(text: string, cb: Function) {
-    let db = new Database(DB_PATH);
-    db.run(`insert into QUESTIONS (text) values (?)`, [text], cb);
-    db.close();
+  static addQuestion(title: string, status: string, authorId: number, answerId: number | null) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.run(
+        `insert into QUESTIONS (title, status, authorId, answerId, created_at) values (?, ?, ?, ?, ?)`,
+        [title, status, authorId, answerId, new Date().toISOString()],
+        (err: any) => {
+          if (err == null) {
+            db.get(`SELECT last_insert_rowid() as id`, (err2: any, row: any) => {
+              if (err2 == null) {
+                resolve(row);
+              }
+            });
+          }
+        }
+      );
+      db.close();
+    });
   }
 
   static addAnswer(text: string, expert_name: string, cb: Function) {
