@@ -68,10 +68,24 @@ export class DB {
     });
   }
 
-  static addAnswer(text: string, expert_name: string, cb: Function) {
-    let db = new Database(DB_PATH);
-    db.run(`insert into ANSWERS (text, expert_name) values (?, ?)`, [text, expert_name], cb);
-    db.close();
+  static addAnswer(content: string, questionId: number, expertId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.run(
+        `insert into ANSWERS (content, questionId, expertId, created_at) values (?, ?, ?, ?)`,
+        [content, questionId, expertId, new Date().toISOString()],
+        (err: any) => {
+          if (err == null) {
+            db.get(`SELECT last_insert_rowid() as id`, (err2: any, row: any) => {
+              if (err2 == null) {
+                resolve(row);
+              }
+            });
+          }
+        }
+      );
+      db.close();
+    })
   }
 
   static getAll(name: entity) {
@@ -91,16 +105,17 @@ export class DB {
   }
 
   static getEntry(name: entity, id: number) {
-    return new Promise((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       let db = new Database(DB_PATH);
-      return db.all(`SELECT * FROM ${name} WHERE id = ?`, [id], (err, rows) => {
-        if (!rows) {
+      return db.get(`SELECT * FROM ${name} WHERE id = ?`, [id], (err, row) => {
+        console.log(err, row);
+        if (!row) {
           reject(err);
         } else {
           if (err) {
             console.error(err);
           }
-          resolve(rows);
+          resolve(row);
         }
       });
     });

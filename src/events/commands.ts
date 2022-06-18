@@ -1,11 +1,51 @@
 import { App } from '../utils/slack';
-import { faq } from '../constants/faq';
 import { formatMessage } from '../utils/format';
 import axios from 'axios';
 import { SLACK_BOT_OAUTH_TOKEN, SLACK_USER_OAUTH_TOKEN } from '../utils/env';
 import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
+  app.command('/answer', async ({ command, ack, say }) => {
+    try {
+      await ack();
+      if (!command.text.includes('|')) {
+        say('Please follow the format: `questionNumberId | content`');
+        return;
+      }
+      const tokens = command.text.split('|');
+      const questionId = Number(tokens[0]);
+      const content = tokens[1];
+      let question;
+      try {
+        question = await DB.getEntry('QUESTIONS', questionId);
+      } catch (e) {
+        console.log('Exception DB.getEntry(\'QUESTIONS\')', e);
+      }
+      if (!question) {
+        say('Wrong question id.');
+        return;
+      }
+      const answerAuthorId = await findUserId();
+      const answerAuthor = await findUserNameById(answerAuthorId as string);
+      const dbUser: any = await DB.findPlayerByUserId(answerAuthorId as string);
+
+      let userId;
+      if (!dbUser) {
+        const response: any = await DB.addPlayer(answerAuthorId as string, answerAuthor?.name as string);
+        userId = response.id;
+      } else {
+        userId = dbUser.id;
+      }
+      try {
+        await DB.addAnswer(content, question.id, userId);
+        say('Thanks for you answer');
+      } catch (e) {
+        console.log('Exception DB.addAnswer', e);
+      }
+    } catch (error) {
+      console.log('Exception /answer', error);
+    }
+  });
   app.command('/db', async ({ command, ack, say }) => {
     await ack();
     let answers = await DB.getAll('ANSWERS');
