@@ -99,7 +99,7 @@ export class DB {
   static updateQuestion(id: number, answerId: number, status: string) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
-      db.run(`update QUESTIONS SET answerId = ? AND status = ? WHERE id = ?`, [answerId, status, id], (err: any) => {
+      db.run(`update QUESTIONS SET answerId = ?, status = ? WHERE id = ?`, [answerId, status, id], (err: any) => {
         db.get(`select * from QUESTIONS where id = (?)`, [id], (err: any, row: any) => {
           if (err == null) {
             resolve(row);
