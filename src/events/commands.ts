@@ -3,11 +3,13 @@ import { faq } from '../constants/faq';
 import { formatMessage } from '../utils/format';
 import axios from 'axios';
 import { SLACK_BOT_OAUTH_TOKEN } from '../utils/env';
+import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
   app.command('/ask', async ({ command, ack, say }) => {
     try {
       await ack();
+      findUserId();
 
       // ask expert
       if (command.text.includes('|') && command.text.includes('@')) {
@@ -28,13 +30,32 @@ const initCommands = (app: App) => {
           const userIds = await findUserIdsByNames(expertNames);
 
           // store data into database and get questionId
+          // insert: player (userId, userName)
+          // data: question ( title, authorId, created_at, answerId, status)
+          const dbUser = await DB.findPlayerByUserId('iddd');
+          let userId;
+          if (!dbUser) {
+            const response = await DB.addPlayer('iddd', 'jon');
+            userId = (response as any).id;
+            console.log("not user db");
+          } else {
+            userId = (dbUser as any).id;
+            console.log("db user");
+          }
+          console.log('userid', userId);
+
+          // insert question
+
           const questionId = 10;
+          DB.addQuestion(question, (paras: any) => {
+            console.log(paras);
+          });
 
           userIds?.forEach((user) => {
             publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
           });
 
-          say("your question has been sent to the expert(s)");
+          say('your question has been sent to the expert(s)');
           return;
         }
 
@@ -123,9 +144,7 @@ const initCommands = (app: App) => {
     }
   }
 
-  async function findUserIdsByNames(
-    names: string[]
-  ): Promise<{ id: string; name: string }[] | undefined> {
+  async function findUserIdsByNames(names: string[]): Promise<{ id: string; name: string }[] | undefined> {
     try {
       const result = await app.client.users.list({
         token: SLACK_BOT_OAUTH_TOKEN,
@@ -137,8 +156,6 @@ const initCommands = (app: App) => {
         mapNames.set(n, 1);
       });
 
-      console.log(mapNames);
-
       if (result !== undefined) {
         for (const member of (result as any).members) {
           if (mapNames.has(member.name)) {
@@ -146,9 +163,23 @@ const initCommands = (app: App) => {
           }
         }
       }
-      console.log('ids', members);
 
       return members;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function findUserId(): Promise<string | undefined> {
+    try {
+      const result = await app.client.bots.info({
+        token: SLACK_BOT_OAUTH_TOKEN,
+      });
+
+      let id = '';
+      console.log('result-', result);
+
+      return id;
     } catch (error) {
       console.error(error);
     }
