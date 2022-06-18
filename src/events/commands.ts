@@ -27,15 +27,18 @@ const initCommands = (app: App) => {
           .map((n) => n.trim());
 
         if (expertNames.length !== 0) {
-          const userIds = await findUserIdsByNames(expertNames);
+          const expertIds = await findUserIdsByNames(expertNames);
+          const questionAuthorId = await findUserId();
+          const questionAuthor = await findUserNameById(questionAuthorId as string)
 
           // store data into database and get questionId
           // insert: player (userId, userName)
           // data: question ( title, authorId, created_at, answerId, status)
-          const dbUser = await DB.findPlayerByUserId('iddd');
+
+          const dbUser = await DB.findPlayerByUserId(questionAuthorId as string);
           let userId;
           if (!dbUser) {
-            const response = await DB.addPlayer('iddd', 'jon');
+            const response = await DB.addPlayer(questionAuthorId as string, questionAuthor?.name as string);
             userId = (response as any).id;
             console.log("not user db");
           } else {
@@ -51,7 +54,7 @@ const initCommands = (app: App) => {
             console.log(paras);
           });
 
-          userIds?.forEach((user) => {
+          expertIds?.forEach((user) => {
             publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
           });
 
@@ -170,16 +173,36 @@ const initCommands = (app: App) => {
     }
   }
 
-  async function findUserId(): Promise<string | undefined> {
+  async function findUserNameById(id: string): Promise<{ id: string; name: string } | undefined> {
     try {
-      const result = await app.client.bots.info({
+      const result = await app.client.users.list({
         token: SLACK_BOT_OAUTH_TOKEN,
       });
 
-      let id = '';
-      console.log('result-', result);
+      let user: { id: string; name: string } ={id:"",name:""};
+ 
+      if (result !== undefined) {
+        for (const member of (result as any).members) {
+          if (member.id === id) {
+            user.id = member.id;
+            user.name= member.real_name };
+          }
+        }
+    
+      return user;
 
-      return id;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function findUserId(): Promise<string | undefined> {
+    try {
+      const result = await app.client.auth.test({
+        token: SLACK_BOT_OAUTH_TOKEN,
+      });
+
+      return result.user_id;
     } catch (error) {
       console.error(error);
     }
