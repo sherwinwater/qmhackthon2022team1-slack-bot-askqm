@@ -36,11 +36,21 @@ const initCommands = (app: App) => {
       } else {
         userId = dbUser.id;
       }
-      try {
-        await DB.addAnswer(content, question.id, userId);
-        say('Thanks for you answer');
-      } catch (e) {
-        console.log('Exception DB.addAnswer', e);
+      const isAlreadyAnswered: any = await DB.getAnswerByQuestionIdAndExpertId(question.id, userId);
+      if (isAlreadyAnswered) {
+        try {
+          await DB.updateAnswer(content, isAlreadyAnswered.id);
+          say('Answer updated!');
+        } catch (e) {
+          console.log('Exception DB.updateAnswer')
+        }
+      } else {
+        try {
+          await DB.addAnswer(content, question.id, userId);
+          say('Thanks for you answer');
+        } catch (e) {
+          console.log('Exception DB.addAnswer', e);
+        }
       }
     } catch (error) {
       console.log('Exception /answer', error);
