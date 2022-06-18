@@ -30,22 +30,21 @@ const initCommands = (app: App) => {
           const expertIds = await findUserIdsByNames(expertNames);
           const questionAuthorId = await findUserId();
           const questionAuthor = await findUserNameById(questionAuthorId as string);
+          console.log("author,",questionAuthor);
 
           // store data into database and get questionId
           // insert: player (userId, userName)
           // data: question ( title, authorId, created_at, answerId, status)
 
           const dbUser: any = await DB.findPlayerByUserId(questionAuthorId as string);
-          
+
           let userId;
           if (!dbUser) {
             const response: any = await DB.addPlayer(questionAuthorId as string, questionAuthor?.name as string);
 
             userId = response.id;
-            console.log('not user db');
           } else {
             userId = dbUser.id;
-            console.log('db user');
           }
           console.log('userid', userId);
 
@@ -176,6 +175,7 @@ const initCommands = (app: App) => {
       const result = await app.client.users.list({
         token: SLACK_BOT_OAUTH_TOKEN,
       });
+      console.log("users",(result as any).members);
 
       let user: { id: string; name: string } = { id: '', name: '' };
 
@@ -199,6 +199,8 @@ const initCommands = (app: App) => {
       const result = await app.client.auth.test({
         token: SLACK_BOT_OAUTH_TOKEN,
       });
+
+      console.log("author",result)
 
       return result.user_id;
     } catch (error) {
