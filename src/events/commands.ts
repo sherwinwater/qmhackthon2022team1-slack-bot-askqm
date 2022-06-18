@@ -14,18 +14,22 @@ const initCommands = (app: App) => {
         questionId = Number(command.text.trim().split(' ')[0]);
       }
       const authorId = body['user_id'];
-      console.log('authorId', authorId);
       const dbUser: any = await DB.findPlayerByUserId(authorId);
-      let response = ``;
+      let response = `Your questions:\n`;
       let questions = (await DB.getAllQuestionsByUserId(dbUser.id) as any[]);
       for (var i = 0 ; i < questions.length ; i ++) {
         let q = questions[i];
         if (!questionId || questionId === q.id) {
           response += `Question ${q.id}: ${q.title}\n`;
           let answers = (await DB.getAllAnswersByQuestionId(q.id) as any[]);
+          if(answers.length === 0){
+            response += `No answer yet.`;
+          }
+
           for (var j = 0 ; j < answers.length ; j++) {
             let a = answers[j];
-            response += `Answer ${a.id}: ${a.content}\n`;
+            const expert:any = await DB.findPlayerById(a.expertId);
+            response += `Answer ${a.id}: ${a.content}\nExpert: ${expert.name}\n\n`;
           }
         }
       }
@@ -231,12 +235,13 @@ const initCommands = (app: App) => {
 
       const dbExpert: any = await DB.findPlayerById(Number(expertId));
 
-      console.log(dbUpdatedQuestion, dbAnswer, dbExpert);
-
       publishMessage(
         dbExpert.userId as string,
         `Your answer is the best one for the question.\nQuestionId: ${questionId}\nQuestion: ${dbUpdatedQuestion.title}\nExpert: ${dbExpert.name}\nYour answer:${dbAnswer.content}`
       );
+
+      say("Question has been closed!")
+
     } catch (error) {
       console.log('Exception /answer', error);
     }
@@ -282,7 +287,6 @@ const initCommands = (app: App) => {
         token: SLACK_BOT_OAUTH_TOKEN,
       });
 
-      console.log(result);
     } catch (error) {
       console.error(error);
     }
@@ -336,20 +340,6 @@ const initCommands = (app: App) => {
       console.error(error);
     }
   }
-
-  // async function findUserId(): Promise<string | undefined> {
-  //   try {
-  //     const result = await app.client.auth.test({
-  //       token: SLACK_USER_OAUTH_TOKEN,
-  //     });
-
-  //     console.log("result",result);
-
-  //     return result.user_id;
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
 };
 
 export { initCommands };
