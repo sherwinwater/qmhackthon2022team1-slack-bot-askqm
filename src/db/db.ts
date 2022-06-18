@@ -13,7 +13,7 @@ if (!DB_PATH) {
  * Static methods to manage database.
  */
 
-type entity = 'QUESTIONS' | 'ANSWERS';
+type entity = 'QUESTIONS' | 'ANSWERS' | 'PLAYERS';
 
 export class DB {
   static DB_PATH: string;

@@ -6,6 +6,15 @@ import { SLACK_BOT_OAUTH_TOKEN } from '../utils/env';
 import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
+  app.command('/db', async ({ command, ack, say }) => {
+    await ack();
+    let answers = await DB.getAll('ANSWERS');
+    say(JSON.stringify(answers, null, 2));
+    let questions = await DB.getAll('QUESTIONS');
+    say(JSON.stringify(questions, null, 2));
+    let players = await DB.getAll('PLAYERS');
+    say(JSON.stringify(players, null, 2));
+  });
   app.command('/ask', async ({ command, ack, say }) => {
     try {
       await ack();
