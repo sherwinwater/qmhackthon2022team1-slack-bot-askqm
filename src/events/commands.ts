@@ -49,7 +49,7 @@ const initCommands = (app: App) => {
           await DB.updateAnswer(content, isAlreadyAnswered.id);
           say('Answer updated!');
         } catch (e) {
-          console.log('Exception DB.updateAnswer')
+          console.log('Exception DB.updateAnswer');
         }
       } else {
         try {
@@ -81,7 +81,6 @@ const initCommands = (app: App) => {
       }
 
       say('Your answer has been sent to the question author.');
-
     } catch (error) {
       console.log('Exception /answer', error);
     }
@@ -181,6 +180,35 @@ const initCommands = (app: App) => {
     } catch (error) {
       console.log('err');
       console.error(error);
+    }
+  });
+
+  app.command('/close-question' + SUFFIX, async ({ command, ack, say, body }) => {
+    try {
+      await ack();
+      if (!command.text.includes('|')) {
+        say('Please follow the format: `/close questionNumberId | answerId`');
+        return;
+      }
+
+      const args = command.text.split('|').map((arg) => arg.trim());
+      const [questionId, answerId] = args;
+
+      const dbUpdatedQuestion: any = await DB.updateQuestion(Number(questionId), Number(answerId), 'Closed');
+
+      const dbAnswer: any = await DB.getAnswerByQuestionIdAndAnswerId(Number(questionId), Number(answerId));
+      const expertId: number = dbAnswer.expertId;
+
+      const dbExpert: any = await DB.findPlayerById(Number(expertId));
+
+      console.log(dbUpdatedQuestion, dbAnswer, dbExpert);
+
+      publishMessage(
+        dbExpert.userId as string,
+        `Your answer is the best one for the question.\nQuestionId: ${questionId}\nQuestion: ${dbUpdatedQuestion.title}\nExpert: ${dbExpert.name}\nYour answer:${dbAnswer.content}`
+      );
+    } catch (error) {
+      console.log('Exception /answer', error);
     }
   });
 

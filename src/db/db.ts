@@ -37,10 +37,10 @@ export class DB {
   static findPlayerByUserId(userId: string) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
-      db.get(`select * from PLAYERS where userId = (?)`, [userId], (err: any,row:any) => {
+      db.get(`select * from PLAYERS where userId = (?)`, [userId], (err: any, row: any) => {
         if (err == null) {
           resolve(row);
-        }else{
+        } else {
           resolve(false);
         }
       });
@@ -51,10 +51,10 @@ export class DB {
   static findQuestionById(id: number) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
-      db.get(`select * from QUESTIONS where id = (?)`, [id], (err: any,row:any) => {
+      db.get(`select * from QUESTIONS where id = (?)`, [id], (err: any, row: any) => {
         if (err == null) {
           resolve(row);
-        }else{
+        } else {
           resolve(false);
         }
       });
@@ -65,10 +65,10 @@ export class DB {
   static findPlayerById(id: number) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
-      db.get(`select * from PLAYERS where id = (?)`, [id], (err: any,row:any) => {
+      db.get(`select * from PLAYERS where id = (?)`, [id], (err: any, row: any) => {
         if (err == null) {
           resolve(row);
-        }else{
+        } else {
           resolve(false);
         }
       });
@@ -96,6 +96,22 @@ export class DB {
     });
   }
 
+  static updateQuestion(id: number, answerId: number, status: string) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.run(`update QUESTIONS SET answerId = ? AND status = ? WHERE id = ?`, [answerId, status, id], (err: any) => {
+        db.get(`select * from QUESTIONS where id = (?)`, [id], (err: any, row: any) => {
+          if (err == null) {
+            resolve(row);
+          } else {
+            resolve(false);
+          }
+        });
+      });
+      db.close();
+    });
+  }
+
   static getAnswerByQuestionIdAndExpertId(questionId: number, expertId: number) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
@@ -108,23 +124,47 @@ export class DB {
           }
           reject(err);
         }
-      )
-    })
+      );
+    });
+  }
+
+  static getAnswerByQuestionIdAndAnswerId(questionId: number, answerId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.get(
+        `SELECT * FROM ANSWERS WHERE questionId = ? AND id = ? LIMIT 1`,
+        [questionId, answerId],
+        (err: any, row) => {
+          if (!err) {
+            return resolve(row);
+          }
+          reject(err);
+        }
+      );
+    });
+  }
+
+  static getAnswerByQuestionId(questionId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.get(`SELECT * FROM ANSWERS WHERE id = (?)`, [questionId], (err: any, row) => {
+        if (!err) {
+          return resolve(row);
+        }
+        reject(err);
+      });
+    });
   }
 
   static updateAnswer(content: string, answerId: number) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
-      db.run(
-        `UPDATE ANSWERS SET content = ? WHERE id = ?`,
-        [content, answerId],
-        (err: any) => {
-          if (err == null) {
-            resolve(true);
-          }
-          reject(err);
+      db.run(`UPDATE ANSWERS SET content = ? WHERE id = ?`, [content, answerId], (err: any) => {
+        if (err == null) {
+          resolve(true);
         }
-      );
+        reject(err);
+      });
       db.close();
     });
   }
@@ -146,7 +186,7 @@ export class DB {
         }
       );
       db.close();
-    })
+    });
   }
 
   static getAll(name: entity) {
