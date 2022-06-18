@@ -34,6 +34,38 @@ export class DB {
     });
   }
 
+  static getAllQuestionsByUserId(userId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      return db.all(`SELECT * FROM QUESTIONS where authorId = ?`, [userId], (err, rows) => {
+        if (!rows) {
+          reject(err);
+        } else {
+          if (err) {
+            console.error(err);
+          }
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  static getAllAnswersByQuestionId(questionId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      return db.all(`SELECT * FROM ANSWERS where questionId = ?`, [questionId], (err, rows) => {
+        if (!rows) {
+          reject(err);
+        } else {
+          if (err) {
+            console.error(err);
+          }
+          resolve(rows);
+        }
+      });
+    });
+  }
+
   static findPlayerByUserId(userId: string) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);

@@ -5,6 +5,36 @@ import { SLACK_BOT_OAUTH_TOKEN, SLACK_USER_OAUTH_TOKEN, SUFFIX } from '../utils/
 import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
+
+  app.command('/check' + SUFFIX, async ({ command, ack, say, body }) => {
+    try {
+      await ack();
+      let questionId;
+      if (command.text.trim().length > 0) {
+        questionId = Number(command.text.trim().split(' ')[0]);
+      }
+      const authorId = body['user_id'];
+      console.log('authorId', authorId);
+      const dbUser: any = await DB.findPlayerByUserId(authorId);
+      let response = ``;
+      let questions = (await DB.getAllQuestionsByUserId(dbUser.id) as any[]);
+      for (var i = 0 ; i < questions.length ; i ++) {
+        let q = questions[i];
+        if (!questionId || questionId === q.id) {
+          response += `Question ${q.id}: ${q.title}\n`;
+          let answers = (await DB.getAllAnswersByQuestionId(q.id) as any[]);
+          for (var j = 0 ; j < answers.length ; j++) {
+            let a = answers[j];
+            response += `Answer ${a.id}: ${a.content}\n`;
+          }
+        }
+      }
+      say(response);
+    } catch (error) {
+      console.log('Exception /check', error);
+    }
+  });
+
   app.command('/answer' + SUFFIX, async ({ command, ack, say, body }) => {
     try {
       await ack();
