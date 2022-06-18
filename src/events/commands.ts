@@ -32,24 +32,20 @@ const initCommands = (app: App) => {
           // store data into database and get questionId
           // insert: player (userId, userName)
           // data: question ( title, authorId, created_at, answerId, status)
-          const dbUser = await DB.findPlayerByUserId('iddd');
+          const dbUser: any = await DB.findPlayerByUserId('iddd');
           let userId;
           if (!dbUser) {
-            const response = await DB.addPlayer('iddd', 'jon');
-            userId = (response as any).id;
+            const response: any = await DB.addPlayer('iddd', 'jon');
+            userId = response.id;
             console.log("not user db");
           } else {
-            userId = (dbUser as any).id;
+            userId = dbUser.id;
             console.log("db user");
           }
           console.log('userid', userId);
 
-          // insert question
-
-          const questionId = 10;
-          DB.addQuestion(question, (paras: any) => {
-            console.log(paras);
-          });
+          const questionResponse: any = await DB.addQuestion(question, 'Open', userId, null);
+          const questionId = questionResponse.id;
 
           userIds?.forEach((user) => {
             publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
