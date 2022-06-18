@@ -20,7 +20,7 @@ const initCommands = (app: App) => {
       for (var i = 0 ; i < questions.length ; i ++) {
         let q = questions[i];
         if (!questionId || questionId === q.id) {
-          response += `Question ${q.id}: ${q.title}\n`;
+          response += `Question ${q.id}: ${q.title}\nStatus: ${q.status}\n`;
           let answers = (await DB.getAllAnswersByQuestionId(q.id) as any[]);
           if(answers.length === 0){
             response += `No answer yet.\n`;
