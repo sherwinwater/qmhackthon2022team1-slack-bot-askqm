@@ -12,8 +12,9 @@
   "dependencies": {
     "@slack/bolt": "^3.11.1",
     "@types/sqlite3": "^3.1.8",
-    "dotenv": "^16.0.1",
-    "sqlite3": "^5.0.8"
+    "sqlite3": "^5.0.8",
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.1"
   },
   "devDependencies": {
     "@types/node": "17.0.42",
