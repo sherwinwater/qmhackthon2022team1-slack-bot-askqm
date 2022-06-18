@@ -5,33 +5,40 @@ import { SLACK_BOT_OAUTH_TOKEN, SLACK_USER_OAUTH_TOKEN, SUFFIX } from '../utils/
 import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
-  app.command('/answer' + SUFFIX, async ({ command, ack, say }) => {
+  app.command('/answer' + SUFFIX, async ({ command, ack, say, body }) => {
     try {
       await ack();
       if (!command.text.includes('|')) {
         say('Please follow the format: `questionNumberId | content`');
         return;
       }
+
       const tokens = command.text.split('|');
       const questionId = Number(tokens[0]);
       const content = tokens[1];
+      const open = tokens[2]?.trim();
       let question;
+
       try {
         question = await DB.getEntry('QUESTIONS', questionId);
       } catch (e) {
-        console.log('Exception DB.getEntry(\'QUESTIONS\')', e);
+        console.log("Exception DB.getEntry('QUESTIONS')", e);
       }
       if (!question) {
         say('Wrong question id.');
         return;
       }
-      const answerAuthorId = await findUserId();
-      const answerAuthor = await findUserNameById(answerAuthorId as string);
-      const dbUser: any = await DB.findPlayerByUserId(answerAuthorId as string);
+
+      const answerAuthorId = body['user_id'];
+      const answerAuthor = await findUserNameById(answerAuthorId);
+      const dbUser: any = await DB.findPlayerByUserId(answerAuthorId);
+
+      const dbQuestion: any = await DB.findQuestionById(questionId);
+      const dbQuestionAuthor: any = await DB.findPlayerById(dbQuestion.authorId);
 
       let userId;
       if (!dbUser) {
-        const response: any = await DB.addPlayer(answerAuthorId as string, answerAuthor?.name as string);
+        const response: any = await DB.addPlayer(answerAuthorId, answerAuthor?.name as string);
         userId = response.id;
       } else {
         userId = dbUser.id;
@@ -52,10 +59,34 @@ const initCommands = (app: App) => {
           console.log('Exception DB.addAnswer', e);
         }
       }
+
+      publishMessage(
+        dbQuestionAuthor.userId,
+        `One expert just answered your question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
+          (answerAuthor as any).name
+        }\nAnswer:${content}`
+      );
+
+      if (open !== undefined && (open.toLowerCase() === 'open' || open.toLowerCase() === 'o')) {
+        const devChannelId = await findConversationId('dev');
+        publishMessage(
+          (devChannelId as number).toString(),
+          `One expert just answered the question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
+            (answerAuthor as any).name
+          }\nAnswer:${content}`
+        );
+
+        say('Your answer has been sent to the question author and dev channel');
+        return;
+      }
+
+      say('Your answer has been sent to the question author.');
+
     } catch (error) {
       console.log('Exception /answer', error);
     }
   });
+
   app.command('/db' + SUFFIX, async ({ command, ack, say }) => {
     await ack();
     let answers = await DB.getAll('ANSWERS');
@@ -66,15 +97,14 @@ const initCommands = (app: App) => {
     say(JSON.stringify(players, null, 2));
   });
 
-  app.command('/ask' + SUFFIX, async ({ command, ack, say }) => {
+  app.command('/ask' + SUFFIX, async ({ command, ack, say, body }) => {
     try {
       await ack();
-      findUserId();
 
       // ask expert
       if (command.text.includes('|') && command.text.includes('@')) {
         const args = command.text.split('|').map((arg) => arg.trim());
-        const [name, question] = args;
+        const [name, question, open] = args;
 
         if (question === '') {
           say('please input your question');
@@ -88,13 +118,8 @@ const initCommands = (app: App) => {
 
         if (expertNames.length !== 0) {
           const expertIds = await findUserIdsByNames(expertNames);
-          const questionAuthorId = await findUserId();
+          const questionAuthorId = body['user_id'];
           const questionAuthor = await findUserNameById(questionAuthorId as string);
-          console.log('author,', questionAuthor);
-
-          // store data into database and get questionId
-          // insert: player (userId, userName)
-          // data: question ( title, authorId, created_at, answerId, status)
 
           const dbUser: any = await DB.findPlayerByUserId(questionAuthorId as string);
 
@@ -106,7 +131,6 @@ const initCommands = (app: App) => {
           } else {
             userId = dbUser.id;
           }
-          console.log('userid', userId);
 
           const questionResponse: any = await DB.addQuestion(question, 'Open', userId, null);
           const questionId = questionResponse.id;
@@ -114,6 +138,14 @@ const initCommands = (app: App) => {
           expertIds?.forEach((user) => {
             publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
           });
+
+          if (open !== undefined && (open.toLowerCase() === 'open' || open.toLowerCase() === 'o')) {
+            const devChannelId = await findConversationId('dev');
+            publishMessage((devChannelId as number).toString(), `QuestionId: ${questionId}\nQuestion: ${question}`);
+
+            say('your question has been sent to the expert(s) and dev channel');
+            return;
+          }
 
           say('your question has been sent to the expert(s)');
           return;
@@ -153,26 +185,20 @@ const initCommands = (app: App) => {
   });
 
   // Find conversation ID using the conversations.list method
-  async function findConversation(name: string) {
+  async function findConversationId(name: string): Promise<number | undefined> {
     try {
-      // Call the conversations.list method using the built-in WebClient
       const result = await app.client.conversations.list({
-        // The token you used to initialize your app
         token: SLACK_BOT_OAUTH_TOKEN,
       });
 
       if (result !== undefined) {
         for (const channel of (result as any).channels) {
           if (channel.name === name) {
-            const conversationId = channel.id;
-
-            // Print result
-            console.log('Found conversation ID: ' + conversationId);
-            // Break from for loop
-            break;
+            return channel.id;
           }
         }
       }
+      return undefined;
     } catch (error) {
       console.error(error);
     }
@@ -253,17 +279,19 @@ const initCommands = (app: App) => {
     }
   }
 
-  async function findUserId(): Promise<string | undefined> {
-    try {
-      const result = await app.client.auth.test({
-        token: SLACK_USER_OAUTH_TOKEN,
-      });
+  // async function findUserId(): Promise<string | undefined> {
+  //   try {
+  //     const result = await app.client.auth.test({
+  //       token: SLACK_USER_OAUTH_TOKEN,
+  //     });
 
-      return result.user_id;
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  //     console.log("result",result);
+
+  //     return result.user_id;
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
 };
 
 export { initCommands };

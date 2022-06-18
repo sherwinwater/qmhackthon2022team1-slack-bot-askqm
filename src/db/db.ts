@@ -48,6 +48,34 @@ export class DB {
     });
   }
 
+  static findQuestionById(id: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.get(`select * from QUESTIONS where id = (?)`, [id], (err: any,row:any) => {
+        if (err == null) {
+          resolve(row);
+        }else{
+          resolve(false);
+        }
+      });
+      db.close();
+    });
+  }
+
+  static findPlayerById(id: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.get(`select * from PLAYERS where id = (?)`, [id], (err: any,row:any) => {
+        if (err == null) {
+          resolve(row);
+        }else{
+          resolve(false);
+        }
+      });
+      db.close();
+    });
+  }
+
   static addQuestion(title: string, status: string, authorId: number, answerId: number | null) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);
