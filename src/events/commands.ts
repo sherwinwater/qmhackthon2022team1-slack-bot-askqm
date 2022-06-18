@@ -2,7 +2,7 @@ import { App } from '../utils/slack';
 import { faq } from '../constants/faq';
 import { formatMessage } from '../utils/format';
 import axios from 'axios';
-import { SLACK_BOT_OAUTH_TOKEN } from '../utils/env';
+import { SLACK_BOT_OAUTH_TOKEN, SLACK_USER_OAUTH_TOKEN } from '../utils/env';
 import { DB } from '../db/db';
 
 const initCommands = (app: App) => {
@@ -15,6 +15,7 @@ const initCommands = (app: App) => {
     let players = await DB.getAll('PLAYERS');
     say(JSON.stringify(players, null, 2));
   });
+
   app.command('/ask', async ({ command, ack, say }) => {
     try {
       await ack();
@@ -39,7 +40,7 @@ const initCommands = (app: App) => {
           const expertIds = await findUserIdsByNames(expertNames);
           const questionAuthorId = await findUserId();
           const questionAuthor = await findUserNameById(questionAuthorId as string);
-          console.log("author,",questionAuthor);
+          console.log('author,', questionAuthor);
 
           // store data into database and get questionId
           // insert: player (userId, userName)
@@ -184,7 +185,6 @@ const initCommands = (app: App) => {
       const result = await app.client.users.list({
         token: SLACK_BOT_OAUTH_TOKEN,
       });
-      console.log("users",(result as any).members);
 
       let user: { id: string; name: string } = { id: '', name: '' };
 
@@ -206,10 +206,8 @@ const initCommands = (app: App) => {
   async function findUserId(): Promise<string | undefined> {
     try {
       const result = await app.client.auth.test({
-        token: SLACK_BOT_OAUTH_TOKEN,
+        token: SLACK_USER_OAUTH_TOKEN,
       });
-
-      console.log("author",result)
 
       return result.user_id;
     } catch (error) {
