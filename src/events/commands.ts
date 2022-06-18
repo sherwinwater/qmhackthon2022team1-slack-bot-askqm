@@ -30,11 +30,15 @@ const initCommands = (app: App) => {
           // store data into database and get questionId
           const questionId = 10;
 
-          userIds?.forEach((userId) => {
-            publishMessage(userId as string, `QuestionId:${questionId} "${question}"`);
+          userIds?.forEach((user) => {
+            publishMessage(user.id as string, `QuestionId: ${questionId}\nQuestion: ${question}\nExpert: ${user.name}`);
           });
+
+          say("your question has been sent to the expert(s)");
           return;
         }
+
+        say('No expert found for your question');
         return;
       }
 
@@ -119,13 +123,15 @@ const initCommands = (app: App) => {
     }
   }
 
-  async function findUserIdsByNames(names: string[]): Promise<string[] | undefined> {
+  async function findUserIdsByNames(
+    names: string[]
+  ): Promise<{ id: string; name: string }[] | undefined> {
     try {
       const result = await app.client.users.list({
         token: SLACK_BOT_OAUTH_TOKEN,
       });
 
-      let memberIds = [];
+      let members: { id: string; name: string }[] = [];
       let mapNames = new Map();
       names.forEach((n) => {
         mapNames.set(n, 1);
@@ -136,14 +142,13 @@ const initCommands = (app: App) => {
       if (result !== undefined) {
         for (const member of (result as any).members) {
           if (mapNames.has(member.name)) {
-            console.log('hass member', member.name);
-            memberIds.push(member.id);
+            members.push({ id: member.id, name: member.real_name });
           }
         }
       }
-      console.log('ids', memberIds);
+      console.log('ids', members);
 
-      return memberIds;
+      return members;
     } catch (error) {
       console.error(error);
     }
