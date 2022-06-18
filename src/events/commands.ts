@@ -227,7 +227,11 @@ const initCommands = (app: App) => {
 
       const args = command.text.split('|').map((arg) => arg.trim());
       const [questionId, answerId] = args;
-
+      const dbQuestion: any = await DB.findQuestionById(Number(questionId));
+      if (dbQuestion.status === 'Closed') {
+        say(`This question is already closed`);
+        return;
+      }
       const dbUpdatedQuestion: any = await DB.updateQuestion(Number(questionId), Number(answerId), 'Closed');
 
       const dbAnswer: any = await DB.getAnswerByQuestionIdAndAnswerId(Number(questionId), Number(answerId));
