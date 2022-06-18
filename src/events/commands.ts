@@ -23,7 +23,7 @@ const initCommands = (app: App) => {
           response += `Question ${q.id}: ${q.title}\n`;
           let answers = (await DB.getAllAnswersByQuestionId(q.id) as any[]);
           if(answers.length === 0){
-            response += `No answer yet.`;
+            response += `No answer yet.\n`;
           }
 
           for (var j = 0 ; j < answers.length ; j++) {
@@ -205,7 +205,7 @@ const initCommands = (app: App) => {
 
         say(`Your question:${command.text.trim()}\nWe find the following resources related to your question:`);
 
-        searchResults.slice(0, 10).forEach((item: any, index: number) => {
+        searchResults.slice(0, 3).forEach((item: any, index: number) => {
           say({
             blocks: [formatMessage(item.title), formatMessage(item.link)],
           });
@@ -240,7 +240,7 @@ const initCommands = (app: App) => {
         `Your answer is the best one for the question.\nQuestionId: ${questionId}\nQuestion: ${dbUpdatedQuestion.title}\nExpert: ${dbExpert.name}\nYour answer:${dbAnswer.content}`
       );
 
-      say("Question has been closed!")
+      say(`Question ${questionId} has been closed!\nQuestion: ${dbUpdatedQuestion.title}\nExpert: ${dbExpert.name}\nAnswer:${dbAnswer.content}`);
 
     } catch (error) {
       console.log('Exception /answer', error);
