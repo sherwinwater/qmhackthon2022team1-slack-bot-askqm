@@ -96,6 +96,39 @@ export class DB {
     });
   }
 
+  static getAnswerByQuestionIdAndExpertId(questionId: number, expertId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.get(
+        `SELECT * FROM ANSWERS WHERE questionId = ? AND expertId = ? LIMIT 1`,
+        [questionId, expertId],
+        (err: any, row) => {
+          if (!err) {
+            return resolve(row);
+          }
+          reject(err);
+        }
+      )
+    })
+  }
+
+  static updateAnswer(content: string, answerId: number) {
+    return new Promise((resolve, reject) => {
+      let db = new Database(DB_PATH);
+      db.run(
+        `UPDATE ANSWERS SET content = ? WHERE id = ?`,
+        [content, answerId],
+        (err: any) => {
+          if (err == null) {
+            resolve(true);
+          }
+          reject(err);
+        }
+      );
+      db.close();
+    });
+  }
+
   static addAnswer(content: string, questionId: number, expertId: number) {
     return new Promise((resolve, reject) => {
       let db = new Database(DB_PATH);

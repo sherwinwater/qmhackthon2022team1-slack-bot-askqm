@@ -43,34 +43,45 @@ const initCommands = (app: App) => {
       } else {
         userId = dbUser.id;
       }
+      const isAlreadyAnswered: any = await DB.getAnswerByQuestionIdAndExpertId(question.id, userId);
+      if (isAlreadyAnswered) {
+        try {
+          await DB.updateAnswer(content, isAlreadyAnswered.id);
+          say('Answer updated!');
+        } catch (e) {
+          console.log('Exception DB.updateAnswer')
+        }
+      } else {
+        try {
+          await DB.addAnswer(content, question.id, userId);
+          say('Thanks for you answer');
+        } catch (e) {
+          console.log('Exception DB.addAnswer', e);
+        }
+      }
 
-      try {
-        await DB.addAnswer(content, question.id, userId);
+      publishMessage(
+        dbQuestionAuthor.userId,
+        `One expert just answered your question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
+          (answerAuthor as any).name
+        }\nAnswer:${content}`
+      );
 
+      if (open !== undefined && (open.toLowerCase() === 'open' || open.toLowerCase() === 'o')) {
+        const devChannelId = await findConversationId('dev');
         publishMessage(
-          dbQuestionAuthor.userId,
-          `One expert just answered your question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
+          (devChannelId as number).toString(),
+          `One expert just answered the question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
             (answerAuthor as any).name
           }\nAnswer:${content}`
         );
 
-        if (open !== undefined && (open.toLowerCase() === 'open' || open.toLowerCase() === 'o')) {
-          const devChannelId = await findConversationId('dev');
-          publishMessage(
-            (devChannelId as number).toString(),
-            `One expert just answered the question\nQuestionId: ${questionId}\nQuestion: ${question.title}\nExpert: ${
-              (answerAuthor as any).name
-            }\nAnswer:${content}`
-          );
-
-          say('Your answer has been sent to the question author and dev channel');
-          return;
-        }
-
-        say('Your answer has been sent to the question author.');
-      } catch (e) {
-        console.log('Exception DB.addAnswer', e);
+        say('Your answer has been sent to the question author and dev channel');
+        return;
       }
+
+      say('Your answer has been sent to the question author.');
+
     } catch (error) {
       console.log('Exception /answer', error);
     }
